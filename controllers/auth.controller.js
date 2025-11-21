@@ -1,0 +1,138 @@
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { User } = require('../models');
+const { successResponse, errorResponse } = require('../utils/response');
+const config = require('../config/config');
+
+class AuthController {
+  /**
+   * Register user baru
+   */
+  async register(req, res, next) {
+    try {
+      const { full_name, email, password, phone, nickname, birthday } = req.body;
+      
+      // Check if user exists
+      const existingUser = await User.findOne({ where: { email } });
+      if (existingUser) {
+        return errorResponse(res, 'Email already registered', 409);
+      }
+      
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      // Create user
+      const user = await User.create({
+        full_name,
+        email,
+        password: hashedPassword,
+        phone,
+        nickname,
+        birthday
+      });
+      
+      // Generate token
+      const token = jwt.sign(
+        { userId: user.id, email: user.email },
+        config.jwt.secret,
+        { expiresIn: config.jwt.expiresIn }
+      );
+      
+      return successResponse(res, {
+        token,
+        user: {
+          id: user.id,
+          full_name: user.full_name,
+          email: user.email,
+          phone: user.phone
+        }
+      }, 'Registration successful', 201);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Login user
+   */
+  async login(req, res, next) {
+    try {
+      const { email, password } = req.body;
+      
+      // Find user
+      const user = await User.findOne({ where: { email } });
+      if (!user) {
+        return errorResponse(res, 'Invalid email or password', 401);
+      }
+      
+      // Check password
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      if (!isValidPassword) {
+        return errorResponse(res, 'Invalid email or password', 401);
+      }
+      
+      // Generate token
+      const token = jwt.sign(
+        { userId: user.id, email: user.email },
+        config.jwt.secret,
+        { expiresIn: config.jwt.expiresIn }
+      );
+      
+      return successResponse(res, {
+        token,
+        user: {
+          id: user.id,
+          full_name: user.full_name,
+          email: user.email,
+          phone: user.phone
+        }
+      }, 'Login successful');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get profile user yang sedang login
+   */
+  async getProfile(req, res, next) {
+    try {
+      const user = await User.findByPk(req.user.id, {
+        attributes: { exclude: ['password'] }
+      });
+      
+      return successResponse(res, user, 'Profile retrieved successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Update password
+   */
+  async updatePassword(req, res, next) {
+    try {
+      const { old_password, new_password } = req.body;
+      
+      const user = await User.findByPk(req.user.id);
+      
+      // Verify old password
+      const isValidPassword = await bcrypt.compare(old_password, user.password);
+      if (!isValidPassword) {
+        return errorResponse(res, 'Invalid old password', 400);
+      }
+      
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(new_password, 10);
+      
+      // Update password
+      await user.update({ password: hashedPassword });
+      
+      return successResponse(res, null, 'Password updated successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+}
+
+module.exports = new AuthController();
