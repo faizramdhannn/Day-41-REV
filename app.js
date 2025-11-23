@@ -6,7 +6,6 @@ const routes = require('./routes');
 const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');
 const logger = require('./utils/logger');
 
-// Initialize express app
 const app = express();
 
 // Security middleware
@@ -18,11 +17,11 @@ app.use(cors({
   credentials: true
 }));
 
-// Body parser middleware
+// ⭐ BODY PARSER - HARUS ADA INI SEBELUM ROUTES
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Request logging middleware
+// Request logging
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.path}`);
   next();
@@ -31,7 +30,7 @@ app.use((req, res, next) => {
 // API routes
 app.use('/api', routes);
 
-// Health check endpoint
+// Health check
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -43,7 +42,7 @@ app.get('/health', (req, res) => {
 // 404 handler
 app.use(notFoundHandler);
 
-// Error handler (harus di paling akhir)
+// Error handler
 app.use(errorHandler);
 
 module.exports = app;

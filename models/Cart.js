@@ -9,12 +9,14 @@ const Cart = sequelize.define('Cart', {
   },
   user_id: {
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: false,
+    unique: true
   }
 }, {
   tableName: 'carts',
   timestamps: true,
-  updatedAt: false
+  createdAt: 'created_at',
+  updatedAt: 'updated_at'
 });
 
 module.exports = Cart;

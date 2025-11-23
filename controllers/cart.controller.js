@@ -1,36 +1,14 @@
-const { Cart, CartItem, Product } = require('../models');
+const cartService = require('../services/cart.service');
 const { successResponse, errorResponse } = require('../utils/response');
 
 class CartController {
   /**
-   * Get user cart
+   * Get cart
    */
   async getCart(req, res, next) {
     try {
       const userId = req.user.id;
-      
-      let cart = await Cart.findOne({
-        where: { user_id: userId },
-        include: [
-          {
-            model: CartItem,
-            as: 'items',
-            include: [
-              {
-                model: Product,
-                as: 'product',
-                include: ['category', 'brand', 'media']
-              }
-            ]
-          }
-        ]
-      });
-      
-      // Create cart if not exists
-      if (!cart) {
-        cart = await Cart.create({ user_id: userId });
-        cart.items = [];
-      }
+      const cart = await cartService.getOrCreateCart(userId);
       
       return successResponse(res, cart, 'Cart retrieved successfully');
     } catch (error) {
@@ -41,123 +19,38 @@ class CartController {
   /**
    * Add item to cart
    */
-  async addToCart(req, res, next) {
+  async addItem(req, res, next) {
     try {
       const userId = req.user.id;
-      const { product_id, quantity = 1 } = req.body;
+      const { product_id, quantity } = req.body;
       
-      // Check product exists
-      const product = await Product.findByPk(product_id);
-      if (!product) {
-        return errorResponse(res, 'Product not found', 404);
-      }
+      const cart = await cartService.addItem(userId, product_id, quantity);
       
-      // Check stock
-      if (product.stock < quantity) {
-        return errorResponse(res, 'Insufficient stock', 400);
-      }
-      
-      // Get or create cart
-      let cart = await Cart.findOne({ where: { user_id: userId } });
-      if (!cart) {
-        cart = await Cart.create({ user_id: userId });
-      }
-      
-      // Check if item already in cart
-      let cartItem = await CartItem.findOne({
-        where: { cart_id: cart.id, product_id }
-      });
-      
-      if (cartItem) {
-        // Update quantity
-        const newQuantity = cartItem.quantity + quantity;
-        if (product.stock < newQuantity) {
-          return errorResponse(res, 'Insufficient stock', 400);
-        }
-        await cartItem.update({ quantity: newQuantity });
-      } else {
-        // Create new cart item
-        cartItem = await CartItem.create({
-          cart_id: cart.id,
-          product_id,
-          quantity
-        });
-      }
-      
-      // Return updated cart
-      const updatedCart = await Cart.findOne({
-        where: { user_id: userId },
-        include: [
-          {
-            model: CartItem,
-            as: 'items',
-            include: [
-              {
-                model: Product,
-                as: 'product',
-                include: ['category', 'brand', 'media']
-              }
-            ]
-          }
-        ]
-      });
-      
-      return successResponse(res, updatedCart, 'Item added to cart successfully');
+      return successResponse(res, cart, 'Item added to cart successfully');
     } catch (error) {
+      if (error.message.includes('not found') || error.message.includes('stock')) {
+        return errorResponse(res, error.message, 400);
+      }
       next(error);
     }
   }
 
   /**
-   * Update cart item quantity
+   * Update cart item
    */
-  async updateCartItem(req, res, next) {
+  async updateItem(req, res, next) {
     try {
       const userId = req.user.id;
-      const { itemId } = req.params;
+      const { id } = req.params;
       const { quantity } = req.body;
       
-      const cart = await Cart.findOne({ where: { user_id: userId } });
-      if (!cart) {
-        return errorResponse(res, 'Cart not found', 404);
-      }
+      const cart = await cartService.updateItem(userId, id, quantity);
       
-      const cartItem = await CartItem.findOne({
-        where: { id: itemId, cart_id: cart.id },
-        include: [{ model: Product, as: 'product' }]
-      });
-      
-      if (!cartItem) {
-        return errorResponse(res, 'Cart item not found', 404);
-      }
-      
-      // Check stock
-      if (cartItem.product.stock < quantity) {
-        return errorResponse(res, 'Insufficient stock', 400);
-      }
-      
-      await cartItem.update({ quantity });
-      
-      // Return updated cart
-      const updatedCart = await Cart.findOne({
-        where: { user_id: userId },
-        include: [
-          {
-            model: CartItem,
-            as: 'items',
-            include: [
-              {
-                model: Product,
-                as: 'product',
-                include: ['category', 'brand', 'media']
-              }
-            ]
-          }
-        ]
-      });
-      
-      return successResponse(res, updatedCart, 'Cart item updated successfully');
+      return successResponse(res, cart, 'Cart item updated successfully');
     } catch (error) {
+      if (error.message.includes('not found') || error.message.includes('stock')) {
+        return errorResponse(res, error.message, 400);
+      }
       next(error);
     }
   }
@@ -165,46 +58,18 @@ class CartController {
   /**
    * Remove item from cart
    */
-  async removeFromCart(req, res, next) {
+  async removeItem(req, res, next) {
     try {
       const userId = req.user.id;
-      const { itemId } = req.params;
+      const { id } = req.params;
       
-      const cart = await Cart.findOne({ where: { user_id: userId } });
-      if (!cart) {
-        return errorResponse(res, 'Cart not found', 404);
-      }
+      const cart = await cartService.removeItem(userId, id);
       
-      const cartItem = await CartItem.findOne({
-        where: { id: itemId, cart_id: cart.id }
-      });
-      
-      if (!cartItem) {
-        return errorResponse(res, 'Cart item not found', 404);
-      }
-      
-      await cartItem.destroy();
-      
-      // Return updated cart
-      const updatedCart = await Cart.findOne({
-        where: { user_id: userId },
-        include: [
-          {
-            model: CartItem,
-            as: 'items',
-            include: [
-              {
-                model: Product,
-                as: 'product',
-                include: ['category', 'brand', 'media']
-              }
-            ]
-          }
-        ]
-      });
-      
-      return successResponse(res, updatedCart, 'Item removed from cart successfully');
+      return successResponse(res, cart, 'Item removed from cart successfully');
     } catch (error) {
+      if (error.message === 'Cart item not found') {
+        return errorResponse(res, error.message, 404);
+      }
       next(error);
     }
   }
@@ -215,15 +80,9 @@ class CartController {
   async clearCart(req, res, next) {
     try {
       const userId = req.user.id;
+      const cart = await cartService.clearCart(userId);
       
-      const cart = await Cart.findOne({ where: { user_id: userId } });
-      if (!cart) {
-        return errorResponse(res, 'Cart not found', 404);
-      }
-      
-      await CartItem.destroy({ where: { cart_id: cart.id } });
-      
-      return successResponse(res, null, 'Cart cleared successfully');
+      return successResponse(res, cart, 'Cart cleared successfully');
     } catch (error) {
       next(error);
     }

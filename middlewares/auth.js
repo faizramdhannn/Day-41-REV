@@ -1,13 +1,15 @@
 const jwt = require('jsonwebtoken');
 const config = require('../config/config');
 const { errorResponse } = require('../utils/response');
-const { User } = require('../models');
 
 /**
  * Middleware untuk autentikasi JWT
  */
 const authenticate = async (req, res, next) => {
   try {
+    // Import User di dalam function untuk avoid circular dependency
+    const { User } = require('../models');
+    
     // Ambil token dari header
     const authHeader = req.headers.authorization;
     
@@ -51,6 +53,8 @@ const authenticate = async (req, res, next) => {
  */
 const optionalAuth = async (req, res, next) => {
   try {
+    const { User } = require('../models');
+    
     const authHeader = req.headers.authorization;
     
     if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -75,6 +79,6 @@ const optionalAuth = async (req, res, next) => {
 };
 
 module.exports = {
-  
+  authenticate,
   optionalAuth
 };

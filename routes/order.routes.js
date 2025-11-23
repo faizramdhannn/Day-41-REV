@@ -26,17 +26,21 @@ const shipmentValidation = [
   validate
 ];
 
-// Routes
-router.get('/',  orderController.getAllOrders);
-router.get('/:id',  orderController.getOrderById);
-router.post('/',  createOrderValidation, orderController.createOrder);
-router.patch('/:id/status',  orderController.updateOrderStatus);
+// ROUTES — semua yang butuh user, harus authenticate
+router.get('/', authenticate, orderController.getAllOrders);
+router.get('/:id', authenticate, orderController.getOrderById);
+
+// CREATE ORDER — wajib login
+router.post('/', authenticate, createOrderValidation, orderController.createOrder);
+
+// UPDATE STATUS — admin/user login
+router.patch('/:id/status', authenticate, orderController.updateOrderStatus);
 
 // Payment routes
-router.post('/:id/payment',  paymentValidation, orderController.createPayment);
+router.post('/:id/payment', authenticate, paymentValidation, orderController.createPayment);
 
 // Shipment routes
-router.post('/:id/shipment',  shipmentValidation, orderController.createShipment);
-router.patch('/:id/shipment/status',  orderController.updateShipmentStatus);
+router.post('/:id/shipment', authenticate, shipmentValidation, orderController.createShipment);
+router.patch('/:id/shipment/status', authenticate, orderController.updateShipmentStatus);
 
 module.exports = router;

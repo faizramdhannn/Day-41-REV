@@ -6,11 +6,11 @@ const config = require('../config/config');
 
 class AuthController {
   /**
-   * Register user baru
+   * Register user baru - HANYA nickname, email, password
    */
   async register(req, res, next) {
     try {
-      const { full_name, email, password, phone, nickname, birthday } = req.body;
+      const { nickname, email, password } = req.body;
       
       // Check if user exists
       const existingUser = await User.findOne({ where: { email } });
@@ -21,14 +21,11 @@ class AuthController {
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
       
-      // Create user
+      // Create user - HANYA 3 field wajib
       const user = await User.create({
-        full_name,
-        email,
-        password: hashedPassword,
-        phone,
         nickname,
-        birthday
+        email,
+        password: hashedPassword
       });
       
       // Generate token
@@ -42,9 +39,8 @@ class AuthController {
         token,
         user: {
           id: user.id,
-          full_name: user.full_name,
-          email: user.email,
-          phone: user.phone
+          nickname: user.nickname,
+          email: user.email
         }
       }, 'Registration successful', 201);
     } catch (error) {
@@ -82,8 +78,9 @@ class AuthController {
         token,
         user: {
           id: user.id,
-          full_name: user.full_name,
+          nickname: user.nickname,
           email: user.email,
+          full_name: user.full_name,
           phone: user.phone
         }
       }, 'Login successful');

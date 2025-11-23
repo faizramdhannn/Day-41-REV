@@ -9,16 +9,16 @@ const User = sequelize.define('User', {
   },
   full_name: {
     type: DataTypes.STRING(150),
-    allowNull: false
+    allowNull: true
   },
   nickname: {
     type: DataTypes.STRING(100),
-    allowNull: true
+    allowNull: false  // Changed to NOT NULL
   },
   email: {
     type: DataTypes.STRING(150),
     unique: true,
-    allowNull: false,
+    allowNull: false,  // Already NOT NULL
     validate: {
       isEmail: true
     }
@@ -37,7 +37,7 @@ const User = sequelize.define('User', {
   },
   password: {
     type: DataTypes.STRING(255),
-    allowNull: true
+    allowNull: false  // Changed to NOT NULL for security
   }
 }, {
   tableName: 'users',
@@ -45,3 +45,4 @@ const User = sequelize.define('User', {
 });
 
 module.exports = User;
+

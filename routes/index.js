@@ -10,10 +10,12 @@ const userRoutes = require('./user.routes');
 const productRoutes = require('./product.routes');
 const orderRoutes = require('./order.routes');
 const cartRoutes = require('./cart.routes');
+const paymentRoutes = require('./payment.routes');
+const shipmentRoutes = require('./shipment.routes');
 
 // Auth validation rules
 const registerValidation = [
-  body('full_name').notEmpty().withMessage('Full name is required'),
+  body('nickname').notEmpty().withMessage('Nickname is required'),
   body('email').isEmail().withMessage('Valid email is required'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   validate
@@ -47,7 +49,9 @@ router.get('/', (req, res) => {
       users: 'GET /api/users',
       products: 'GET /api/products',
       orders: 'GET /api/orders',
-      cart: 'GET /api/cart'
+      cart: 'GET /api/cart',
+      payments: 'GET /api/payments',
+      shipments: 'GET /api/shipments'
     }
   });
 });
@@ -55,13 +59,15 @@ router.get('/', (req, res) => {
 // Auth routes
 router.post('/auth/register', registerValidation, authController.register);
 router.post('/auth/login', loginValidation, authController.login);
-router.get('/auth/profile',  authController.getProfile);
-router.put('/auth/password',  updatePasswordValidation, authController.updatePassword);
+router.get('/auth/profile', authenticate, authController.getProfile);
+router.put('/auth/password', authenticate, updatePasswordValidation, authController.updatePassword);
 
 // Module routes
 router.use('/users', userRoutes);
 router.use('/products', productRoutes);
 router.use('/orders', orderRoutes);
 router.use('/cart', cartRoutes);
+router.use('/payments', paymentRoutes);
+router.use('/shipments', shipmentRoutes);
 
 module.exports = router;

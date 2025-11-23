@@ -2,13 +2,10 @@ const orderService = require('../services/order.service');
 const { successResponse, errorResponse, paginatedResponse } = require('../utils/response');
 
 class OrderController {
-  /**
-   * Get all orders
-   */
   async getAllOrders(req, res, next) {
     try {
       const { page = 1, limit = 10 } = req.query;
-      const userId = req.user ? req.user.id : null;
+      const userId = req.user.id;
       
       const result = await orderService.getAllOrders(userId, parseInt(page), parseInt(limit));
       
@@ -23,13 +20,10 @@ class OrderController {
     }
   }
 
-  /**
-   * Get order by ID
-   */
   async getOrderById(req, res, next) {
     try {
       const { id } = req.params;
-      const userId = req.user ? req.user.id : null;
+      const userId = req.user.id;
       
       const order = await orderService.getOrderById(id, userId);
       
@@ -42,9 +36,6 @@ class OrderController {
     }
   }
 
-  /**
-   * Create order
-   */
   async createOrder(req, res, next) {
     try {
       const userId = req.user.id;
@@ -61,9 +52,6 @@ class OrderController {
     }
   }
 
-  /**
-   * Update order status
-   */
   async updateOrderStatus(req, res, next) {
     try {
       const { id } = req.params;
@@ -80,9 +68,6 @@ class OrderController {
     }
   }
 
-  /**
-   * Create payment
-   */
   async createPayment(req, res, next) {
     try {
       const { id } = req.params;
@@ -99,9 +84,6 @@ class OrderController {
     }
   }
 
-  /**
-   * Create shipment
-   */
   async createShipment(req, res, next) {
     try {
       const { id } = req.params;
@@ -118,9 +100,6 @@ class OrderController {
     }
   }
 
-  /**
-   * Update shipment status
-   */
   async updateShipmentStatus(req, res, next) {
     try {
       const { id } = req.params;
