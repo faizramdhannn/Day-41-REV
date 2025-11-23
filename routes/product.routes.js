@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const productController = require('../controllers/product.controller');
-const { authenticate, optionalAuth } = require('../middlewares/auth');
+const {  optionalAuth } = require('../middlewares/auth');
 const { body } = require('express-validator');
 const validate = require('../middlewares/validate');
 
@@ -20,8 +20,8 @@ router.get('/brands', productController.getAllBrands);
 router.get('/:id', optionalAuth, productController.getProductById);
 
 // Protected routes (auth required)
-router.post('/', authenticate, productValidation, productController.createProduct);
-router.put('/:id', authenticate, productValidation, productController.updateProduct);
-router.delete('/:id', authenticate, productController.deleteProduct);
+router.post('/',  productValidation, productController.createProduct);
+router.put('/:id',  productValidation, productController.updateProduct);
+router.delete('/:id',  productController.deleteProduct);
 
 module.exports = router;

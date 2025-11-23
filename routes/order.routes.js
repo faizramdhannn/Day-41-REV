@@ -27,16 +27,16 @@ const shipmentValidation = [
 ];
 
 // Routes
-router.get('/', authenticate, orderController.getAllOrders);
-router.get('/:id', authenticate, orderController.getOrderById);
-router.post('/', authenticate, createOrderValidation, orderController.createOrder);
-router.patch('/:id/status', authenticate, orderController.updateOrderStatus);
+router.get('/',  orderController.getAllOrders);
+router.get('/:id',  orderController.getOrderById);
+router.post('/',  createOrderValidation, orderController.createOrder);
+router.patch('/:id/status',  orderController.updateOrderStatus);
 
 // Payment routes
-router.post('/:id/payment', authenticate, paymentValidation, orderController.createPayment);
+router.post('/:id/payment',  paymentValidation, orderController.createPayment);
 
 // Shipment routes
-router.post('/:id/shipment', authenticate, shipmentValidation, orderController.createShipment);
-router.patch('/:id/shipment/status', authenticate, orderController.updateShipmentStatus);
+router.post('/:id/shipment',  shipmentValidation, orderController.createShipment);
+router.patch('/:id/shipment/status',  orderController.updateShipmentStatus);
 
 module.exports = router;

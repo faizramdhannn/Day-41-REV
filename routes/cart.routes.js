@@ -18,10 +18,10 @@ const updateCartValidation = [
 ];
 
 // Routes
-router.get('/', authenticate, cartController.getCart);
-router.post('/items', authenticate, addToCartValidation, cartController.addToCart);
-router.put('/items/:itemId', authenticate, updateCartValidation, cartController.updateCartItem);
-router.delete('/items/:itemId', authenticate, cartController.removeFromCart);
-router.delete('/clear', authenticate, cartController.clearCart);
+router.get('/',  cartController.getCart);
+router.post('/items',  addToCartValidation, cartController.addToCart);
+router.put('/items/:itemId',  updateCartValidation, cartController.updateCartItem);
+router.delete('/items/:itemId',  cartController.removeFromCart);
+router.delete('/clear',  cartController.clearCart);
 
 module.exports = router;

@@ -55,8 +55,8 @@ router.get('/', (req, res) => {
 // Auth routes
 router.post('/auth/register', registerValidation, authController.register);
 router.post('/auth/login', loginValidation, authController.login);
-router.get('/auth/profile', authenticate, authController.getProfile);
-router.put('/auth/password', authenticate, updatePasswordValidation, authController.updatePassword);
+router.get('/auth/profile',  authController.getProfile);
+router.put('/auth/password',  updatePasswordValidation, authController.updatePassword);
 
 // Module routes
 router.use('/users', userRoutes);
