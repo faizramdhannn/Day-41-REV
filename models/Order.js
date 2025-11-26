@@ -12,8 +12,9 @@ const Order = sequelize.define('Order', {
     allowNull: false
   },
   status: {
-    type: DataTypes.STRING(20),
-    defaultValue: 'pending'
+    type: DataTypes.ENUM('PENDING', 'PAID', 'SHIPPED', 'DELIVERED', 'COMPLETED', 'CANCELED'),
+    defaultValue: 'PENDING',
+    allowNull: false
   },
   total_amount: {
     type: DataTypes.BIGINT,
@@ -26,10 +27,20 @@ const Order = sequelize.define('Order', {
   payment_method: {
     type: DataTypes.STRING(50),
     allowNull: true
+  },
+  canceled_at: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  canceled_reason: {
+    type: DataTypes.TEXT,
+    allowNull: true
   }
 }, {
   tableName: 'orders',
-  timestamps: true
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at'
 });
 
 module.exports = Order;

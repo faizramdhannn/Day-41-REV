@@ -12,7 +12,7 @@ class OrderService {
     const { count, rows } = await Order.findAndCountAll({
       where,
       include: [
-        { model: User, as: 'user', attributes: ['id', 'full_name', 'email'] },
+        { model: User, as: 'user', attributes: ['id', 'full_name', 'email', 'nickname'] },
         { 
           model: OrderItem, 
           as: 'items',
@@ -44,7 +44,7 @@ class OrderService {
     const order = await Order.findOne({
       where,
       include: [
-        { model: User, as: 'user', attributes: ['id', 'full_name', 'email', 'phone'] },
+        { model: User, as: 'user', attributes: ['id', 'full_name', 'email', 'phone', 'nickname'] },
         { 
           model: OrderItem, 
           as: 'items',
@@ -63,13 +63,17 @@ class OrderService {
   }
 
   /**
-   * Create order dari cart
+   * Create order dari cart (status: PENDING)
    */
   async createOrder(userId, orderData) {
     const transaction = await sequelize.transaction();
     
     try {
       const { items, payment_method, shipping_cost = 20000 } = orderData;
+      
+      if (!items || items.length === 0) {
+        throw new Error('Order must have at least one item');
+      }
       
       // Hitung total
       let total_amount = 0;
@@ -103,10 +107,10 @@ class OrderService {
         );
       }
       
-      // Create order
+      // Create order dengan status PENDING
       const order = await Order.create({
         user_id: userId,
-        status: 'pending',
+        status: 'PENDING',
         total_amount,
         shipping_cost,
         payment_method
@@ -130,22 +134,79 @@ class OrderService {
   }
 
   /**
-   * Update order status
+   * Update order status dengan validasi flow
+   * PENDING → PAID → SHIPPED → DELIVERED → COMPLETED
+   *         ↓
+   *      CANCELED
    */
-  async updateOrderStatus(orderId, status) {
+  async updateOrderStatus(orderId, status, reason = null) {
     const order = await Order.findByPk(orderId);
     
     if (!order) {
       throw new Error('Order not found');
     }
     
-    await order.update({ status });
+    // Validasi status transition
+    this.validateStatusTransition(order.status, status);
+    
+    const updateData = { status };
+    
+    // Handle CANCELED status
+    if (status === 'CANCELED') {
+      updateData.canceled_at = new Date();
+      updateData.canceled_reason = reason || 'Canceled by user/admin';
+      
+      // Restore stock jika dibatalkan
+      await this.restoreStock(orderId);
+    }
+    
+    await order.update(updateData);
     
     return await this.getOrderById(orderId);
   }
 
   /**
-   * Create payment for order
+   * Validasi status transition
+   */
+  validateStatusTransition(currentStatus, newStatus) {
+    const validTransitions = {
+      'PENDING': ['PAID', 'CANCELED'],
+      'PAID': ['SHIPPED', 'CANCELED'],
+      'SHIPPED': ['DELIVERED'],
+      'DELIVERED': ['COMPLETED'],
+      'COMPLETED': [],
+      'CANCELED': []
+    };
+    
+    if (!validTransitions[currentStatus]) {
+      throw new Error(`Invalid current status: ${currentStatus}`);
+    }
+    
+    if (!validTransitions[currentStatus].includes(newStatus)) {
+      throw new Error(`Cannot transition from ${currentStatus} to ${newStatus}`);
+    }
+  }
+
+  /**
+   * Restore stock ketika order dibatalkan
+   */
+  async restoreStock(orderId) {
+    const orderItems = await OrderItem.findAll({
+      where: { order_id: orderId }
+    });
+    
+    for (const item of orderItems) {
+      const product = await Product.findByPk(item.product_id);
+      if (product) {
+        await product.update({
+          stock: product.stock + item.quantity
+        });
+      }
+    }
+  }
+
+  /**
+   * Create payment untuk order (PENDING → PAID)
    */
   async createPayment(orderId, paymentData) {
     const order = await Order.findByPk(orderId);
@@ -154,23 +215,33 @@ class OrderService {
       throw new Error('Order not found');
     }
     
+    if (order.status !== 'PENDING') {
+      throw new Error(`Cannot create payment for order with status: ${order.status}`);
+    }
+    
+    // Check if payment already exists
+    const existingPayment = await Payment.findOne({ where: { order_id: orderId } });
+    if (existingPayment) {
+      throw new Error('Payment already exists for this order');
+    }
+    
     const payment = await Payment.create({
       order_id: orderId,
       provider: paymentData.provider,
-      status: 'paid',
+      status: 'PAID',
       transaction_id: paymentData.transaction_id,
       amount: order.total_amount + order.shipping_cost,
       paid_at: new Date()
     });
     
-    // Update order status
-    await order.update({ status: 'paid' });
+    // Update order status to PAID
+    await order.update({ status: 'PAID' });
     
     return payment;
   }
 
   /**
-   * Create shipment for order
+   * Create shipment untuk order (PAID → SHIPPED)
    */
   async createShipment(orderId, shipmentData) {
     const order = await Order.findByPk(orderId);
@@ -179,12 +250,26 @@ class OrderService {
       throw new Error('Order not found');
     }
     
+    if (order.status !== 'PAID') {
+      throw new Error(`Cannot create shipment for order with status: ${order.status}`);
+    }
+    
+    // Check if shipment already exists
+    const existingShipment = await Shipment.findOne({ where: { order_id: orderId } });
+    if (existingShipment) {
+      throw new Error('Shipment already exists for this order');
+    }
+    
     const shipment = await Shipment.create({
       order_id: orderId,
       courier: shipmentData.courier,
       tracking_number: shipmentData.tracking_number,
-      status: 'waiting_pickup'
+      status: 'WAITING_PICKUP',
+      shipped_at: new Date()
     });
+    
+    // Update order status to SHIPPED
+    await order.update({ status: 'SHIPPED' });
     
     return shipment;
   }
@@ -201,21 +286,61 @@ class OrderService {
     
     const updateData = { status };
     
-    if (status === 'shipped' && !shipment.shipped_at) {
-      updateData.shipped_at = new Date();
-    }
-    
-    if (status === 'delivered') {
+    // SHIPPED → DELIVERED
+    if (status === 'DELIVERED') {
       updateData.delivered_at = new Date();
       
-      // Update order status
+      // Update order status to DELIVERED
       const order = await Order.findByPk(orderId);
-      await order.update({ status: 'delivered' });
+      await order.update({ status: 'DELIVERED' });
     }
     
     await shipment.update(updateData);
     
     return shipment;
+  }
+
+  /**
+   * Complete order (DELIVERED → COMPLETED)
+   * Bisa otomatis atau manual oleh user
+   */
+  async completeOrder(orderId, userId = null) {
+    const where = { id: orderId };
+    if (userId) where.user_id = userId;
+    
+    const order = await Order.findOne({ where });
+    
+    if (!order) {
+      throw new Error('Order not found');
+    }
+    
+    if (order.status !== 'DELIVERED') {
+      throw new Error(`Cannot complete order with status: ${order.status}`);
+    }
+    
+    await order.update({ status: 'COMPLETED' });
+    
+    return await this.getOrderById(orderId, userId);
+  }
+
+  /**
+   * Cancel order (PENDING/PAID → CANCELED)
+   */
+  async cancelOrder(orderId, userId = null, reason = null) {
+    const where = { id: orderId };
+    if (userId) where.user_id = userId;
+    
+    const order = await Order.findOne({ where });
+    
+    if (!order) {
+      throw new Error('Order not found');
+    }
+    
+    if (!['PENDING', 'PAID'].includes(order.status)) {
+      throw new Error(`Cannot cancel order with status: ${order.status}`);
+    }
+    
+    return await this.updateOrderStatus(orderId, 'CANCELED', reason);
   }
 }
 

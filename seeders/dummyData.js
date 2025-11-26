@@ -8,7 +8,9 @@ const {
   Order,
   OrderItem,
   Payment,
-  Shipment
+  Shipment,
+  Category,
+  Brand
 } = require('../models');
 const logger = require('../utils/logger');
 
@@ -16,7 +18,27 @@ const seedData = async () => {
   try {
     logger.info('Starting data seeding...');
 
-    // 1. Create Users - HANYA 3 field wajib
+    // 1. Create Categories
+    logger.info('Seeding categories...');
+    const categories = await Category.bulkCreate([
+      { name: 'Laptop', slug: 'laptop' },
+      { name: 'Smartphone', slug: 'smartphone' },
+      { name: 'Audio', slug: 'audio' },
+      { name: 'Peripheral', slug: 'peripheral' },
+      { name: 'Wearable', slug: 'wearable' }
+    ]);
+
+    // 2. Create Brands
+    logger.info('Seeding brands...');
+    const brands = await Brand.bulkCreate([
+      { name: 'Asus', slug: 'asus' },
+      { name: 'Samsung', slug: 'samsung' },
+      { name: 'Sony', slug: 'sony' },
+      { name: 'Keychron', slug: 'keychron' },
+      { name: 'Apple', slug: 'apple' }
+    ]);
+
+    // 3. Create Users
     logger.info('Seeding users...');
     const hashedPassword = await bcrypt.hash('password123', 10);
     const users = await User.bulkCreate([
@@ -46,7 +68,7 @@ const seedData = async () => {
       }
     ]);
 
-    // 2. Create User Addresses
+    // 4. Create User Addresses
     logger.info('Seeding user addresses...');
     await UserAddress.bulkCreate([
       {
@@ -70,17 +92,28 @@ const seedData = async () => {
         province: 'DKI Jakarta',
         postal_code: '10230',
         is_default: true
+      },
+      {
+        user_id: users[2].id,
+        label: 'Home',
+        recipient_name: 'Bob Wilson',
+        phone: '081234567892',
+        address_line: 'Jl. Gatot Subroto No. 789',
+        city: 'Bandung',
+        province: 'Jawa Barat',
+        postal_code: '40123',
+        is_default: true
       }
     ]);
 
-    // 3. Create Products 
+    // 5. Create Products 
     logger.info('Seeding products...');
     const products = await Product.bulkCreate([
       {
         name: 'Laptop Asus VivoBook 14 A1400',
         description: 'Laptop ringan dengan prosesor AMD Ryzen 5, RAM 8GB, dan SSD 512GB.',
-        brand: 'Asus',        
-        category: 'Laptop',   
+        brand_id: brands[0].id,
+        category_id: categories[0].id,
         price: 8499000,
         stock: 12,
         rating: 4.7
@@ -88,8 +121,8 @@ const seedData = async () => {
       {
         name: 'Smartphone Samsung Galaxy A55 5G',
         description: 'Smartphone mid-range dengan layar Super AMOLED 6.6 inci, baterai 5000mAh.',
-        brand: 'Samsung',
-        category: 'Smartphone',
+        brand_id: brands[1].id,
+        category_id: categories[1].id,
         price: 5999000,
         stock: 20,
         rating: 4.8
@@ -97,8 +130,8 @@ const seedData = async () => {
       {
         name: 'Headphone Sony WH-1000XM5',
         description: 'Headphone wireless dengan noise cancelling terbaik di kelasnya.',
-        brand: 'Sony',
-        category: 'Audio',
+        brand_id: brands[2].id,
+        category_id: categories[2].id,
         price: 4999000,
         stock: 15,
         rating: 4.9
@@ -106,8 +139,8 @@ const seedData = async () => {
       {
         name: 'Mechanical Keyboard Keychron K6 RGB',
         description: 'Keyboard mechanical 65% layout dengan switch Gateron Brown.',
-        brand: 'Keychron',
-        category: 'Peripheral',
+        brand_id: brands[3].id,
+        category_id: categories[3].id,
         price: 1350000,
         stock: 25,
         rating: 4.6
@@ -115,15 +148,15 @@ const seedData = async () => {
       {
         name: 'Smartwatch Apple Watch SE 2nd Gen',
         description: 'Smartwatch dengan fitur pelacak kebugaran dan sensor detak jantung.',
-        brand: 'Apple',
-        category: 'Wearable',
+        brand_id: brands[4].id,
+        category_id: categories[4].id,
         price: 5499000,
         stock: 18,
         rating: 4.8
       }
     ]);
 
-    // 4. Create Product Media
+    // 6. Create Product Media
     logger.info('Seeding product media...');
     await ProductMedia.bulkCreate([
       { product_id: products[0].id, media_type: 'image', url: 'https://images.unsplash.com/photo-1587202372775-98927d7dbd06?w=800' },
@@ -133,94 +166,170 @@ const seedData = async () => {
       { product_id: products[4].id, media_type: 'image', url: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=800' }
     ]);
 
-    // 5. Create Orders
+    // 7. Create Orders dengan berbagai status
     logger.info('Seeding orders...');
     const orders = await Order.bulkCreate([
       {
         user_id: users[0].id,
-        status: 'paid',
+        status: 'PENDING',
+        total_amount: 1350000,
+        shipping_cost: 20000,
+        payment_method: 'bank_transfer'
+      },
+      {
+        user_id: users[0].id,
+        status: 'PAID',
         total_amount: 8499000,
         shipping_cost: 20000,
         payment_method: 'bank_transfer'
       },
       {
         user_id: users[1].id,
-        status: 'shipped',
+        status: 'SHIPPED',
         total_amount: 5999000,
         shipping_cost: 20000,
         payment_method: 'credit_card'
       },
       {
         user_id: users[2].id,
-        status: 'delivered',
+        status: 'DELIVERED',
         total_amount: 4999000,
         shipping_cost: 20000,
         payment_method: 'e_wallet'
+      },
+      {
+        user_id: users[1].id,
+        status: 'COMPLETED',
+        total_amount: 5499000,
+        shipping_cost: 20000,
+        payment_method: 'bank_transfer'
+      },
+      {
+        user_id: users[2].id,
+        status: 'CANCELED',
+        total_amount: 1350000,
+        shipping_cost: 20000,
+        payment_method: 'bank_transfer',
+        canceled_at: new Date(),
+        canceled_reason: 'Customer changed mind'
       }
     ]);
 
-    // 6. Create Order Items
+    // 8. Create Order Items
     logger.info('Seeding order items...');
     await OrderItem.bulkCreate([
+      // Order 1 - PENDING
       {
         order_id: orders[0].id,
+        product_id: products[3].id,
+        product_name_snapshot: products[3].name,
+        price_snapshot: products[3].price,
+        quantity: 1
+      },
+      // Order 2 - PAID
+      {
+        order_id: orders[1].id,
         product_id: products[0].id,
         product_name_snapshot: products[0].name,
         price_snapshot: products[0].price,
         quantity: 1
       },
+      // Order 3 - SHIPPED
       {
-        order_id: orders[1].id,
+        order_id: orders[2].id,
         product_id: products[1].id,
         product_name_snapshot: products[1].name,
         price_snapshot: products[1].price,
         quantity: 1
       },
+      // Order 4 - DELIVERED
       {
-        order_id: orders[2].id,
+        order_id: orders[3].id,
         product_id: products[2].id,
         product_name_snapshot: products[2].name,
         price_snapshot: products[2].price,
         quantity: 1
+      },
+      // Order 5 - COMPLETED
+      {
+        order_id: orders[4].id,
+        product_id: products[4].id,
+        product_name_snapshot: products[4].name,
+        price_snapshot: products[4].price,
+        quantity: 1
+      },
+      // Order 6 - CANCELED
+      {
+        order_id: orders[5].id,
+        product_id: products[3].id,
+        product_name_snapshot: products[3].name,
+        price_snapshot: products[3].price,
+        quantity: 1
       }
     ]);
 
-    // 7. Create Payments
+    // 9. Create Payments (untuk order yang sudah PAID ke atas)
     logger.info('Seeding payments...');
     await Payment.bulkCreate([
       {
-        order_id: orders[0].id,
+        order_id: orders[1].id,
         provider: 'bank_transfer',
-        status: 'paid',
-        transaction_id: 'TRX-20251103-0001',
+        status: 'PAID',
+        transaction_id: 'TRX-20241126-0001',
         amount: 8519000,
-        paid_at: new Date()
+        paid_at: new Date('2024-11-20')
       },
       {
-        order_id: orders[1].id,
+        order_id: orders[2].id,
         provider: 'credit_card',
-        status: 'paid',
-        transaction_id: 'TRX-20251103-0002',
+        status: 'PAID',
+        transaction_id: 'TRX-20241126-0002',
         amount: 6019000,
-        paid_at: new Date()
+        paid_at: new Date('2024-11-21')
+      },
+      {
+        order_id: orders[3].id,
+        provider: 'e_wallet',
+        status: 'PAID',
+        transaction_id: 'TRX-20241126-0003',
+        amount: 5019000,
+        paid_at: new Date('2024-11-22')
+      },
+      {
+        order_id: orders[4].id,
+        provider: 'bank_transfer',
+        status: 'PAID',
+        transaction_id: 'TRX-20241126-0004',
+        amount: 5519000,
+        paid_at: new Date('2024-11-23')
       }
     ]);
 
-    // 8. Create Shipments
+    // 10. Create Shipments (untuk order yang sudah SHIPPED ke atas)
     logger.info('Seeding shipments...');
     await Shipment.bulkCreate([
       {
-        order_id: orders[0].id,
+        order_id: orders[2].id,
         courier: 'JNE',
-        tracking_number: 'JNE-20251103-0001',
-        status: 'waiting_pickup'
+        tracking_number: 'JNE-20241126-0001',
+        status: 'IN_TRANSIT',
+        shipped_at: new Date('2024-11-22')
       },
       {
-        order_id: orders[1].id,
+        order_id: orders[3].id,
         courier: 'SiCepat',
-        tracking_number: 'SICEPAT-20251103-0002',
-        status: 'shipped',
-        shipped_at: new Date()
+        tracking_number: 'SICEPAT-20241126-0002',
+        status: 'DELIVERED',
+        shipped_at: new Date('2024-11-23'),
+        delivered_at: new Date('2024-11-24')
+      },
+      {
+        order_id: orders[4].id,
+        courier: 'J&T',
+        tracking_number: 'JNT-20241126-0003',
+        status: 'DELIVERED',
+        shipped_at: new Date('2024-11-24'),
+        delivered_at: new Date('2024-11-25')
       }
     ]);
 
@@ -230,6 +339,14 @@ const seedData = async () => {
     logger.info('Email: john@example.com');
     logger.info('Password: password123');
     logger.info('Nickname: johndoe');
+    logger.info('');
+    logger.info('Order Status Examples:');
+    logger.info('- Order #1: PENDING (waiting for payment)');
+    logger.info('- Order #2: PAID (payment received, ready to ship)');
+    logger.info('- Order #3: SHIPPED (on delivery)');
+    logger.info('- Order #4: DELIVERED (received by customer)');
+    logger.info('- Order #5: COMPLETED (finished)');
+    logger.info('- Order #6: CANCELED (canceled order)');
     
     await sequelize.close();
     process.exit(0);

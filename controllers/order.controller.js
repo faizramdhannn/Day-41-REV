@@ -2,6 +2,9 @@ const orderService = require('../services/order.service');
 const { successResponse, errorResponse, paginatedResponse } = require('../utils/response');
 
 class OrderController {
+  /**
+   * Get all orders
+   */
   async getAllOrders(req, res, next) {
     try {
       const { page = 1, limit = 10 } = req.query;
@@ -20,6 +23,9 @@ class OrderController {
     }
   }
 
+  /**
+   * Get order by ID
+   */
   async getOrderById(req, res, next) {
     try {
       const { id } = req.params;
@@ -36,6 +42,9 @@ class OrderController {
     }
   }
 
+  /**
+   * Create order (status: PENDING)
+   */
   async createOrder(req, res, next) {
     try {
       const userId = req.user.id;
@@ -45,29 +54,41 @@ class OrderController {
       
       return successResponse(res, order, 'Order created successfully', 201);
     } catch (error) {
-      if (error.message.includes('not found') || error.message.includes('Insufficient stock')) {
+      if (error.message.includes('not found') || 
+          error.message.includes('Insufficient stock') ||
+          error.message.includes('must have at least')) {
         return errorResponse(res, error.message, 400);
       }
       next(error);
     }
   }
 
+  /**
+   * Update order status
+   */
   async updateOrderStatus(req, res, next) {
     try {
       const { id } = req.params;
-      const { status } = req.body;
+      const { status, reason } = req.body;
       
-      const order = await orderService.updateOrderStatus(id, status);
+      const order = await orderService.updateOrderStatus(id, status, reason);
       
       return successResponse(res, order, 'Order status updated successfully');
     } catch (error) {
       if (error.message === 'Order not found') {
         return errorResponse(res, error.message, 404);
       }
+      if (error.message.includes('Cannot transition') || 
+          error.message.includes('Invalid')) {
+        return errorResponse(res, error.message, 400);
+      }
       next(error);
     }
   }
 
+  /**
+   * Create payment (PENDING → PAID)
+   */
   async createPayment(req, res, next) {
     try {
       const { id } = req.params;
@@ -80,10 +101,17 @@ class OrderController {
       if (error.message === 'Order not found') {
         return errorResponse(res, error.message, 404);
       }
+      if (error.message.includes('Cannot create payment') || 
+          error.message.includes('already exists')) {
+        return errorResponse(res, error.message, 400);
+      }
       next(error);
     }
   }
 
+  /**
+   * Create shipment (PAID → SHIPPED)
+   */
   async createShipment(req, res, next) {
     try {
       const { id } = req.params;
@@ -96,10 +124,17 @@ class OrderController {
       if (error.message === 'Order not found') {
         return errorResponse(res, error.message, 404);
       }
+      if (error.message.includes('Cannot create shipment') || 
+          error.message.includes('already exists')) {
+        return errorResponse(res, error.message, 400);
+      }
       next(error);
     }
   }
 
+  /**
+   * Update shipment status (SHIPPED → DELIVERED)
+   */
   async updateShipmentStatus(req, res, next) {
     try {
       const { id } = req.params;
@@ -111,6 +146,51 @@ class OrderController {
     } catch (error) {
       if (error.message === 'Shipment not found') {
         return errorResponse(res, error.message, 404);
+      }
+      next(error);
+    }
+  }
+
+  /**
+   * Complete order (DELIVERED → COMPLETED)
+   */
+  async completeOrder(req, res, next) {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+      
+      const order = await orderService.completeOrder(id, userId);
+      
+      return successResponse(res, order, 'Order completed successfully');
+    } catch (error) {
+      if (error.message === 'Order not found') {
+        return errorResponse(res, error.message, 404);
+      }
+      if (error.message.includes('Cannot complete')) {
+        return errorResponse(res, error.message, 400);
+      }
+      next(error);
+    }
+  }
+
+  /**
+   * Cancel order (PENDING/PAID → CANCELED)
+   */
+  async cancelOrder(req, res, next) {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+      const { reason } = req.body;
+      
+      const order = await orderService.cancelOrder(id, userId, reason);
+      
+      return successResponse(res, order, 'Order canceled successfully');
+    } catch (error) {
+      if (error.message === 'Order not found') {
+        return errorResponse(res, error.message, 404);
+      }
+      if (error.message.includes('Cannot cancel')) {
+        return errorResponse(res, error.message, 400);
       }
       next(error);
     }
