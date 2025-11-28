@@ -152,13 +152,13 @@ class OrderService {
     const updateData = { status };
     
     // Handle CANCELED status
-    if (status === 'CANCELED') {
-      updateData.canceled_at = new Date();
-      updateData.canceled_reason = reason || 'Canceled by user/admin';
+    // if (status === 'CANCELED') {
+    //   updateData.canceled_at = new Date();
+    //   updateData.canceled_reason = reason || 'Canceled by user/admin';
       
-      // Restore stock jika dibatalkan
-      await this.restoreStock(orderId);
-    }
+    //   // Restore stock jika dibatalkan
+    //   await this.restoreStock(orderId);
+    // }
     
     await order.update(updateData);
     

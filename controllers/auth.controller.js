@@ -90,6 +90,24 @@ class AuthController {
   }
 
   /**
+   * Logout user
+   * Note: Karena menggunakan JWT stateless, logout dilakukan di client-side
+   * dengan menghapus token. Endpoint ini hanya sebagai konfirmasi.
+   * Untuk implementasi lebih advanced, bisa gunakan token blacklist.
+   */
+  async logout(req, res, next) {
+    try {
+      // Optional: Implement token blacklist here if needed
+      // For now, just return success response
+      // Client should delete the token from storage
+      
+      return successResponse(res, null, 'Logout successful');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get profile user yang sedang login
    */
   async getProfile(req, res, next) {

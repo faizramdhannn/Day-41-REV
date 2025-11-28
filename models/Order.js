@@ -28,14 +28,14 @@ const Order = sequelize.define('Order', {
     type: DataTypes.STRING(50),
     allowNull: true
   },
-  canceled_at: {
-    type: DataTypes.DATE,
-    allowNull: true
-  },
-  canceled_reason: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  }
+  // canceled_at: {
+  //   type: DataTypes.DATE,
+  //   allowNull: true
+  // },
+  // canceled_reason: {
+  //   type: DataTypes.TEXT,
+  //   allowNull: true
+  // }
 }, {
   tableName: 'orders',
   timestamps: true,

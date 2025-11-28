@@ -43,6 +43,7 @@ router.get('/', (req, res) => {
       auth: {
         register: 'POST /api/auth/register',
         login: 'POST /api/auth/login',
+        logout: 'POST /api/auth/logout',
         profile: 'GET /api/auth/profile',
         updatePassword: 'PUT /api/auth/password'
       },
@@ -59,6 +60,7 @@ router.get('/', (req, res) => {
 // Auth routes
 router.post('/auth/register', registerValidation, authController.register);
 router.post('/auth/login', loginValidation, authController.login);
+router.post('/auth/logout', authenticate, authController.logout);
 router.get('/auth/profile', authenticate, authController.getProfile);
 router.put('/auth/password', authenticate, updatePasswordValidation, authController.updatePassword);
 

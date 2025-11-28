@@ -1,58 +1,36 @@
-const app = require('./app');
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
 const config = require('./config/config');
-const sequelize = require('./db');
+const routes = require('./routes');
+const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');
 const logger = require('./utils/logger');
+const orderScheduler = require('./schedulers/orderScheduler');
 
-// Import models untuk inisialisasi relasi
-require('./models');
+const app = express();
 
-const PORT = config.server.port;
+// Middlewares
+app.use(helmet());
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(morgan('dev'));
+
+// Routes
+app.use('/api', routes);
+
+// Error handlers
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+// Start scheduler
+orderScheduler.startAutoExpireOrders();
 
 // Start server
-const startServer = async () => {
-  try {
-    // Test database connection
-    await sequelize.authenticate();
-    logger.info('Database connection has been established successfully.');
-    
-    // Start listening
-    app.listen(PORT, () => {
-      logger.info(`🚀 Server is running on port ${PORT}`);
-      logger.info(`📝 Environment: ${config.server.env}`);
-      logger.info(`🔗 API URL: http://localhost:${PORT}/api`);
-      logger.info(`❤️  Health Check: http://localhost:${PORT}/health`);
-    });
-  } catch (error) {
-    logger.error('Unable to start server:', error);
-    process.exit(1);
-  }
-};
-
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (err) => {
-  logger.error('Unhandled Promise Rejection:', err);
-  // Close server & exit process
-  process.exit(1);
+const PORT = config.server.port;
+app.listen(PORT, () => {
+  logger.info(`🚀 Server running on port ${PORT} in ${config.server.env} mode`);
+  logger.info(`📍 API available at http://localhost:${PORT}/api`);
 });
-
-// Handle uncaught exceptions
-process.on('uncaughtException', (err) => {
-  logger.error('Uncaught Exception:', err);
-  process.exit(1);
-});
-
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received. Shutting down gracefully...');
-  await sequelize.close();
-  process.exit(0);
-});
-
-process.on('SIGINT', async () => {
-  logger.info('SIGINT received. Shutting down gracefully...');
-  await sequelize.close();
-  process.exit(0);
-});
-
-// Start the server
-startServer();
