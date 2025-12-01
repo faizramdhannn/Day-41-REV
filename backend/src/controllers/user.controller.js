@@ -1,4 +1,4 @@
-const userService = require('../../../services/user.service');
+const userService = require('../services/user.service');
 const { successResponse, errorResponse, paginatedResponse } = require('../utils/response');
 
 class UserController {

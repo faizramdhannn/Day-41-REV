@@ -5,9 +5,9 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const config = require('./src/config/config');
 const routes = require('./src/routes');
-const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');
-const logger = require('./utils/logger');
-const orderScheduler = require('./schedulers/orderScheduler');
+const { errorHandler, notFoundHandler } = require('./src/middlewares/errorHandler');
+const logger = require('./src/utils/logger');
+const orderScheduler = require('./src/schedulers/orderScheduler');
 
 const app = express();
 

@@ -1,4 +1,4 @@
-const sequelize = require('../backend/src/db');
+const sequelize = require('../db');
 
 // Import semua models
 const User = require('./User');

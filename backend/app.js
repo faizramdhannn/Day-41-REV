@@ -4,7 +4,7 @@ const helmet = require('helmet');
 const config = require('./config/config');
 const routes = require('./routes');
 const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');
-const logger = require('./utils/logger');
+const logger = require('./src/utils/logger');
 
 const app = express();
 

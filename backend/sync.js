@@ -1,5 +1,5 @@
 const sequelize = require('./db');
-const logger = require('./utils/logger');
+const logger = require('./src/utils/logger');
 
 // Import models untuk memastikan relasi terdefinisi
 require('./models');

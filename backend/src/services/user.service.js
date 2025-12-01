@@ -1,4 +1,4 @@
-const { User, UserAddress, Order } = require('../backend/src/models');
+const { User, UserAddress, Order } = require('../models');
 
 class UserService {
   /**
