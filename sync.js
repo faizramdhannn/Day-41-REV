@@ -18,12 +18,12 @@ const syncDatabase = async () => {
     // Pilih salah satu:
     
     // Option 1: Alter tables (recommended untuk development)
-    await sequelize.sync({ alter: true });
-    logger.info('✅ Database synchronized successfully with ALTER mode');
+    // await sequelize.sync({ alter: true });
+    // logger.info('✅ Database synchronized successfully with ALTER mode');
     
     // Option 2: Force sync (DANGER: akan hapus semua data!)
-    // await sequelize.sync({ force: true });
-    // logger.info('✅ Database synchronized successfully with FORCE mode');
+    await sequelize.sync({ force: true });
+    logger.info('✅ Database synchronized successfully with FORCE mode');
     
     // Option 3: Hanya cek tanpa perubahan
     // await sequelize.sync();

@@ -2,7 +2,7 @@
 Authentication
 POST   /api/auth/register          - Register new user
 POST   /api/auth/login             - Login user
-POST   /api/auth/logout            - Logout user ✨NEW
+POST   /api/auth/logout            - Logout user 
 GET    /api/auth/profile           - Get current user profile
 PUT    /api/auth/password          - Update password
 
