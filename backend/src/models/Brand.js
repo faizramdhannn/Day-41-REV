@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../db');
+const sequelize = require('../backend/src/db');
 
-const Category = sequelize.define('Category', {
+const Brand = sequelize.define('Brand', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -16,8 +16,8 @@ const Category = sequelize.define('Category', {
     allowNull: true
   }
 }, {
-  tableName: 'categories',
+  tableName: 'brands',
   timestamps: false
 });
 
-module.exports = Category;
+module.exports = Brand;
