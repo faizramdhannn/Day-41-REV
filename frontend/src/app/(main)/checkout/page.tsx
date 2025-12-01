@@ -10,6 +10,7 @@ import { orderService } from '@/lib/services/order.service';
 import { formatCurrency } from '@/lib/utils/format';
 import { PAYMENT_METHODS, SHIPPING_COST } from '@/lib/utils/constants';
 import toast from 'react-hot-toast';
+import type { CartItem } from '@/types';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -27,7 +28,7 @@ export default function CheckoutPage() {
   }, [isAuthenticated, fetchCart, router]);
 
   const subtotal = cart?.items?.reduce(
-    (sum, item) => sum + item.product.price * item.quantity,
+    (sum: number, item: CartItem) => sum + item.product.price * item.quantity,
     0
   ) || 0;
 
@@ -43,7 +44,7 @@ export default function CheckoutPage() {
 
     try {
       const orderData = {
-        items: cart.items.map(item => ({
+        items: cart.items.map((item: CartItem) => ({
           product_id: item.product_id,
           quantity: item.quantity,
         })),
@@ -83,7 +84,7 @@ export default function CheckoutPage() {
           <div className="bg-white rounded-lg border p-6">
             <h2 className="text-xl font-semibold mb-4">Order Items</h2>
             <div className="space-y-4">
-              {cart.items.map((item) => (
+              {cart.items.map((item: CartItem) => (
                 <div key={item.id} className="flex gap-4">
                   <div className="relative w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                     <Image

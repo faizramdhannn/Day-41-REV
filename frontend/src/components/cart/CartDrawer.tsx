@@ -8,6 +8,7 @@ import { Button } from '../ui/Button';
 import { formatCurrency } from '@/lib/utils/format';
 import { SHIPPING_COST } from '@/lib/utils/constants';
 import { useRouter } from 'next/navigation';
+import type { CartItem as CartItemType } from '@/types';
 
 export const CartDrawer = () => {
   const { cart, isOpen, closeCart, fetchCart } = useCartStore();
@@ -20,7 +21,7 @@ export const CartDrawer = () => {
   }, [isOpen, fetchCart]);
 
   const subtotal = cart?.items?.reduce(
-    (sum, item) => sum + item.product.price * item.quantity,
+    (sum: number, item: CartItemType) => sum + item.product.price * item.quantity,
     0
   ) || 0;
 
@@ -66,7 +67,7 @@ export const CartDrawer = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {cart.items.map((item) => (
+              {cart.items.map((item: CartItemType) => (
                 <CartItem key={item.id} item={item} />
               ))}
             </div>
